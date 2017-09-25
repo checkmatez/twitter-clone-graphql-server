@@ -1,6 +1,9 @@
 import Tweet from '../../models/Tweet'
 
 import { requireAuth } from '../../services/auth'
+import { pubsub } from '../../config/pubsub'
+
+const TWEET_ADDED = 'TWEET_ADDED'
 
 export default {
   getTweet: async (_, { _id }, { user }) => {
@@ -23,7 +26,10 @@ export default {
   createTweet: async (_, args, { user }) => {
     try {
       await requireAuth(user)
-      return Tweet.create({ ...args, user: user._id })
+      const tweet = await Tweet.create({ ...args, user: user._id })
+      console.log(tweet)
+      pubsub.publish(TWEET_ADDED, { [TWEET_ADDED]: tweet })
+      return tweet
     } catch (error) {
       throw error
     }
@@ -57,5 +63,8 @@ export default {
     } catch (error) {
       throw error
     }
+  },
+  tweetAdded: {
+    subscribe: () => pubsub.asyncIterator(TWEET_ADDED),
   },
 }
